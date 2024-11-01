@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <signal.h>
 
-#define MAX_LINE 1024 // Maximum length of input line / 输入行的最大长度
+#define MAX_LINE 1024 // Maximum length of input line
 
 // ANSI color codes
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -20,28 +20,52 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+/**
+ * MyShell Program
+ *
+ * This shell program allows users to execute commands interactively.
+ * It provides a colorful prompt with user, host, and current directory
+ * information, and includes a history feature. The shell handles common
+ * signals and displays the exit status or signal information when a
+ * command completes.
+ *
+ * @author: Tianyun Song
+ * @version: October 31, 2024
+ */
 
-// Function to display the initial header with colorful lines and "Rainbow shell" message
+/**
+ * Displays the initial header with colorful lines and "Rainbow shell" message.
+ */
 void display_header() {
     printf(ANSI_COLOR_CYAN "<3 Rainbow shell <3" ANSI_COLOR_RESET "\n"
-           ANSI_COLOR_RED "--------" ANSI_COLOR_GREEN "--------" ANSI_COLOR_YELLOW "--------" ANSI_COLOR_BLUE "--------\n" ANSI_COLOR_RESET
-           ANSI_COLOR_MAGENTA "--------" ANSI_COLOR_CYAN "--------" ANSI_COLOR_RED "--------" ANSI_COLOR_GREEN "--------\n" ANSI_COLOR_RESET);
+           ANSI_COLOR_RED "--------" ANSI_COLOR_GREEN 
+           "--------" ANSI_COLOR_YELLOW "--------" 
+           ANSI_COLOR_BLUE "--------\n" ANSI_COLOR_RESET
+           ANSI_COLOR_MAGENTA "--------" ANSI_COLOR_CYAN 
+           "--------" ANSI_COLOR_RED "--------" ANSI_COLOR_GREEN
+            "--------\n" ANSI_COLOR_RESET);
 }
 
-// Function to display a custom prompt with colorful user, host, and cwd info
+/**
+ * Displays a custom prompt with colorful user, host, and cwd information.
+ *
+ * @param prompt Buffer to store formatted prompt.
+ */
 void display_prompt(char *prompt) {
     char cwd[MAX_LINE];
-    struct passwd *pw = getpwuid(geteuid());  // Get username / 获取用户名
+    struct passwd *pw = getpwuid(geteuid());  // Get username
     char hostname[MAX_LINE];
 
-    // Get current working directory and hostname / 获取当前目录和主机名
-    if (getcwd(cwd, sizeof(cwd)) != NULL && gethostname(hostname, sizeof(hostname)) == 0) {
-        // Format the prompt with user@host:cwd and colorful <3 ----- / 使用彩色 user@host:cwd 提示符
+    // Get current working directory and hostname
+    if (getcwd(cwd, sizeof(cwd)) != NULL && gethostname(hostname, 
+        sizeof(hostname)) == 0) {
+        // Format the prompt
         snprintf(prompt, MAX_LINE,
                  ANSI_COLOR_RED "%.10s" ANSI_COLOR_RESET
                  "@" ANSI_COLOR_GREEN "%.10s" ANSI_COLOR_RESET
                  ":" ANSI_COLOR_YELLOW "%.50s" ANSI_COLOR_RESET
-                 " " ANSI_COLOR_BLUE "<3 " ANSI_COLOR_MAGENTA "-----" ANSI_COLOR_CYAN " -----" ANSI_COLOR_RESET " ",
+                 " " ANSI_COLOR_BLUE "<3 " ANSI_COLOR_MAGENTA 
+                 "-----" ANSI_COLOR_CYAN " -----" ANSI_COLOR_RESET " ",
                  pw->pw_name, hostname, cwd);
     } else {
         perror("Error getting prompt information");
@@ -50,49 +74,52 @@ void display_prompt(char *prompt) {
 }
 
 int main() {
-    char *line;  // Pointer to store user input / 用于存储用户输入的指针
-    char *args[MAX_LINE / 2 + 1];  // Array to store command arguments / 存储命令参数的数组
-    char prompt[MAX_LINE];  // Buffer to store prompt / 存储提示符的缓冲区
+    char *line;  // Pointer to store user input
+    char *args[MAX_LINE / 2 + 1];  // Array to store command arguments
+    char prompt[MAX_LINE];  // Buffer to store prompt 
 
-    // Display the initial header only once at the start / 仅在启动时显示一次 header
+    // Display the header at the start
     display_header();
 
     while (1) {
-        display_prompt(prompt);  // Display custom prompt / 显示自定义提示符
-        line = readline(prompt);  // Read input from user using readline / 使用 readline 获取用户输入
+        display_prompt(prompt);  // Display custom prompt
+        line = readline(prompt);  // Read input from user using readline
 
-        // If user types "exit" or presses Ctrl+D, break the loop / 如果用户输入 "exit" 或按下 Ctrl+D，退出循环
+        // If user types "exit" or presses Ctrl+D, break the loop
         if (line == NULL || strcmp(line, "exit") == 0) {
-            free(line);  // Free allocated line buffer / 释放 line 缓冲区
+            free(line);  // Free allocated line buffer
             break;
         }
 
-        // Add command to history / 将命令添加到历史记录
+        // Add command to history
         add_history(line);
 
-        // Parse the input into command and arguments / 将输入解析为命令和参数
+        // Parse the input into command and arguments
         int i = 0;
-        char *token = strtok(line, " ");  // Split input by spaces / 按空格分割输入
+        char *token = strtok(line, " ");  // Split input by spaces
         while (token != NULL) {
-            args[i++] = token;  // Store each argument in args array / 将每个参数存储在 args 数组中
+            args[i++] = token;  // Store each argument in args array
             token = strtok(NULL, " ");
         }
-        args[i] = NULL;  // Null-terminate the array for execvp / 使用 NULL 终止数组，以便 execvp 使用
+        args[i] = NULL;  // Null-terminate the array for execvp
 
-        // Create a child process to execute the command / 创建子进程来执行命令
+        // Create a child process to execute the command
         pid_t pid = fork();
         if (pid < 0) {
             perror("Fork failed");
             continue;
         } else if (pid == 0) {
-            // Child process: execute the command / 子进程：执行命令
+            // Child process: execute the command
             if (execvp(args[0], args) == -1) {
-                fprintf(stderr, ANSI_COLOR_RED "Error executing command '%s': %s\n" ANSI_COLOR_RESET, 
-                        args[0], strerror(errno));  // Print error if execvp fails / 如果 execvp 执行失败则打印错误
+                fprintf(stderr, ANSI_COLOR_RED 
+                        "Error executing command '%s': %s\n" 
+                        ANSI_COLOR_RESET, 
+                        args[0], strerror(errno));  
+                        // Print error if execvp fails
             }
-            exit(EXIT_FAILURE);  // Exit child process if execvp fails / 如果 execvp 失败则退出子进程
+            exit(EXIT_FAILURE);  // Exit child process if execvp fails
         } else {
-            // Parent process: wait for the child process to complete and report status / 父进程：等待子进程完成并报告状态
+            // Parent process: wait for the child process to complete and report status
             int status;
             waitpid(pid, &status, 0);
 
@@ -101,16 +128,18 @@ int main() {
             } else if (WIFSIGNALED(status)) {
                 int signal_num = WTERMSIG(status);
                 if (signal_num == SIGSEGV) {
-                    fprintf(stderr, ANSI_COLOR_RED "Oopsie!! Segmentation fault (signal %d) detected.\ncode dumped.\n" ANSI_COLOR_RESET, signal_num);
+                    fprintf(stderr, ANSI_COLOR_RED 
+                    "Oopsie!! Segmentation fault (signal %d) detected.\ncode dumped.\n" 
+                    ANSI_COLOR_RESET, signal_num);
                 } else {
                     printf("Command terminated by signal %d\n", signal_num);
                 }
             }
         }
-        free(line);  // Free allocated line buffer / 释放 line 缓冲区
+        free(line);  // Free allocated line buffer
     }
 
     printf("Exiting MyShell\n");
-    return 0;  // Exit the shell / 退出 Shell
+    return 0;  // Exit the shell
 }
 
