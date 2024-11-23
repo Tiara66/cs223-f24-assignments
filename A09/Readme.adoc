@@ -1,9 +1,25 @@
 = Hardware specifications
 
 Where did your run your tests? A laptop, or goldengate?
+The tests were run on goldengate.
 
 What are the performance specifications of the machine: number and speed of
 processors, size of RAM? (use `lscpu` and `free -m`)
+Number and Speed of Processors
+Architecture: x86_64
+Total Logical CPUs: 64 (2 sockets with 16 cores per socket, each core has 2 threads due to hyper-threading)
+Physical Cores per Socket: 16 (32 physical cores total)
+CPU Model: Intel(R) Xeon(R) Gold 6246R
+Base Frequency: 3.40 GHz
+Maximum Turbo Frequency: 4.10 GHz
+L1 Cache: 1 MiB (per core)
+L2 Cache: 32 MiB
+L3 Cache: 71.5 MiB (shared)
+Size of RAM
+Total Memory: 95 GiB (95302 MiB)
+Free Memory: 86 GiB (86964 MiB)
+Buffer/Cache: 4.85 GiB (4850 MiB)
+Swap Memory: 8 GiB, with 7.6 GiB free
 
 = Single-process mandelbrot
 
@@ -13,26 +29,24 @@ the amount of time it takes to compute each image.
 [cols="1,1"]
 !===
 | Size | Time (s) 
-| 100 | todo
-| 400 | todo
-| 800 | todo
-| 1000 | todo
-| 2000 | todo
+| 100 | 0.026017
+| 400 | 0.306210
+| 800 | 1.064483
+| 1000 | 1.651778
+| 2000 | 6.463177
 !===
 
 = Multi-process mandelbrot
 
-Run your executable, `thread_mandelbrot`, with the following sizes and record
+Run your executable, `multi_mandelbrot`, with the following sizes and record
 the amount of time it takes to compute each image.
 
 [cols="1,1"]
 !===
 | Size | Time (s) 
-| 100 | todo
-| 400 | todo
-| 800 | todo
-| 1000 | todo
-| 2000 | todo
+| 100 | 0.016841
+| 400 | 0.138150
+| 800 | 0.491541
+| 1000 | 0.738634
+| 2000 | 2.770066
 !===
-
-
