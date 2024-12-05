@@ -1,3 +1,11 @@
+/**
+ * Memory management test program for simulating allocations and frees.
+ * This program simulates the allocation and freeing of memory chunks,
+ * gathering memory statistics at each round.
+ *
+ * @author: Tianyun Song
+ * @version: December 5, 2024
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -10,15 +18,74 @@
 #define BUFFER 5
 #define LOOP 10
 
+/**
+ * Structure representing a memory chunk.
+ * Each chunk tracks its size, the amount of used memory, and the next chunk.
+ */
 struct chunk {
   int size;
   int used;
   struct chunk *next;
 };
 
+// Pointer to the head of the free list
+extern struct chunk* flist;
+
+/**
+ * Prints memory statistics for the current state of the free list and buffer.
+ *
+ * @param freelist Pointer to the head of the free list
+ * @param buffer Array of pointers representing allocated memory chunks
+ * @param len Length of the buffer array
+ */
 void memstats(struct chunk* freelist, void* buffer[], int len) {
+    int free_blocks = 0;
+    int free_memory = 0;
+    
+    // Traverse the freelist to gather statistics about free memory
+    struct chunk* node = freelist;
+    while (node != NULL) {
+        free_blocks++;
+        free_memory += node->size;
+        node = node->next;
+    }
+
+    int used_blocks = 0;
+    int used_memory = 0;
+    int unapplied_memory = 0;
+
+    // Traverse the buffer to gather statistics about used memory
+    for (int i = 0; i < len; i++) {
+        if (buffer[i] != NULL) {
+            used_blocks++;
+            // Jump back to the header to read the memory
+            struct chunk* header = (struct chunk*)((struct chunk*)buffer[i] - 1);
+            used_memory += header->size;
+            // If there is unused memory
+            if (header->size > header->used) {
+                unapplied_memory += (header->size - header->used);
+            }
+        }
+    }
+
+    int total_memory = used_memory + free_memory;
+    float underutilized_memory = (float)unapplied_memory / (float)used_memory;
+    int total_blocks = free_blocks + used_blocks;
+
+    // Print out the statistics
+    printf("Total blocks: %d Free blocks: %d Used blocks: %d\n", total_blocks, free_blocks, used_blocks);
+    printf("Total memory allocated: %d Free memory: %d Used memory: %d\n", total_memory, free_memory, used_memory);
+    // debug : printf("Unaaplied_memory: %d\n", unapplied_memory);
+    printf("Underutilized memory: %.2f\n", underutilized_memory);
 }
 
+/**
+ * Main driver function to run the memory allocation and freeing simulation.
+ *
+ * @param argc Argument count
+ * @param argv Argument values
+ * @return Returns 0 on success, 1 on memory allocation failure
+ */
 int main ( int argc, char* argv[]) {
 
   printf("Starting test..\n");
